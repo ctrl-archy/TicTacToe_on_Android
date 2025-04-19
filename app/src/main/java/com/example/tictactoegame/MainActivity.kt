@@ -52,23 +52,38 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TicTacToeGame(modifier: Modifier = Modifier) {
 
-
+// globālās vērtības spēles izsekošanai, tas ieķļauj :
+    //esošo ekrānu
     var currentScreen by remember { mutableStateOf(MainActivity.Screen.NameInput) }
+    // spēlētāja ievadīto vārdu
     var playerName by remember { mutableStateOf("") }
+    // spēles režīmu (PvC vai PvP)
     var gameMode by remember { mutableStateOf("") }
 
+    // spēles lauks
     var board by remember { mutableStateOf(List(9) { "" }) }
+    // esošais spēlētājs (X simbols sāk)
     var currentPlayer by remember { mutableStateOf("X") }
+    // esošais uzvarētājs
     var winner by remember { mutableStateOf<String?>(null) }
+    // uzvarētāja logs
     var showResultDialog by remember { mutableStateOf(false) }
 
+    // spēles atsākšanas funkcija, atbrīvo sarakstu, atsāk spēlētāja gājienu no X un noņem iepriekšējo uzvarētāja paziņojumu
     fun resetGame() {
         board = List(9) { "" }
         currentPlayer = "X"
         winner = null
         showResultDialog = false
     }
+/*
+Pārbauda vai kāda no uzvarošām kombinācijām tiek izpildīta
 
+    0 1 2
+    3 4 5
+    6 7 8
+
+ */
     val checkWinner: () -> String? = checkWinner@{
         val combos = listOf(
             listOf(0, 1, 2),
@@ -80,6 +95,8 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
             listOf(0, 4, 8),
             listOf(2, 4, 6)
         )
+
+        // salīdzina vai visas trīs vērtības uzvarošā kombinācijā ir vienādas
         for ((a, b, c) in combos) {
             if (board[a].isNotEmpty() && board[a] == board[b] && board[b] == board[c]) {
                 return@checkWinner board[a]
@@ -89,14 +106,20 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
         null
     }
 
-    // CPU logic for PvC
+    // Datora gājiens
     LaunchedEffect(currentPlayer, gameMode, winner) {
+        // izpilda gājienu, kad ir PvC režīms un O simbola gājiens
         if (gameMode == "PvC" && currentPlayer == "O" && winner == null) {
+
+            // taimeris, lai tiktu simulēta domāšana
             delay(500)
+
+            // izvēlas jebkuru brīvu laukumu
             val empty = board.mapIndexed { i, v -> if (v.isEmpty()) i else null }.filterNotNull()
             if (empty.isNotEmpty()) {
                 val move = empty.random()
                 board = board.toMutableList().apply { this[move] = "O" }
+                // pārbaude, vai spēle ir noslēgusies
                 winner = checkWinner()
                 if (winner == null) {
                     currentPlayer = "X"
@@ -107,8 +130,9 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
         }
     }
 
-    // UI
+    // trīs dažādi ekrāni aplikācijai
     when (currentScreen) {
+        // Vārda ievade, kas tiek izpildīta, kā "pop-up" paziņojums, lai vērstu lietotāja uzmanību
         MainActivity.Screen.NameInput -> {
             AlertDialog(
                 onDismissRequest = {},
@@ -123,6 +147,7 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                 confirmButton = {
                     Button(
                         onClick = {
+                            // maza pārbaude, lai vārds nebūtu tukšs un tad noved uz spēles režīma izvēli
                             if (playerName.isNotBlank()) {
                                 currentScreen = MainActivity.Screen.ModeSelection
                             }
@@ -133,7 +158,7 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                 }
             )
         }
-
+        // spēles režīma "spēletājs pret spēlētājs" vai "spēlētājs pret dators"
         MainActivity.Screen.ModeSelection -> {
             Column(
                 modifier = Modifier
@@ -142,6 +167,7 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // specifiska sasveicināšanās ar lietotāju
                 Text("Welcome, $playerName!", style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
@@ -166,6 +192,7 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                     Text("Play PvC")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
+                // iespēja nomainīt/izlabot lietotāja vārdu
                 Button(
                     onClick = {
                         resetGame()
@@ -178,7 +205,7 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                 }
             }
         }
-
+        // spēles logs
         MainActivity.Screen.Game -> {
             Column(
                 modifier = modifier
@@ -186,6 +213,7 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                     .padding(16.dp)
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    // iespēja atgriezties, lai nomainītu spēles režīmu
                     Button(onClick = {
                         currentScreen = MainActivity.Screen.ModeSelection
                         resetGame()
@@ -195,7 +223,7 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-
+                // gājiena izsekošana lietotājam
                 Text(
                     text = when {
                         winner == null -> if (gameMode == "PvP") {
@@ -213,8 +241,10 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                 for (row in 0..2) {
                     Row {
                         for (col in 0..2) {
+                            // spēles lauka izveide
                             val index = row * 3 + col
                             Button(
+                                // spēles lauciņu pieraksts
                                 onClick = {
                                     if (board[index].isEmpty() && winner == null &&
                                         (gameMode == "PvP" || currentPlayer == "X")
@@ -244,7 +274,7 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
         }
     }
 
-    // Game over dialog
+    // "pop-up" paziņojums par uzvarošo spēlētāju
     if (showResultDialog && winner != null) {
         AlertDialog(
             onDismissRequest = {},
@@ -253,12 +283,15 @@ fun TicTacToeGame(modifier: Modifier = Modifier) {
                 Text(
                     when (winner) {
                         "Draw" -> "It's a draw!"
+                        // X ir pirmā spēlētāja gājiens tādējādi, ja uzvarošais simbols ir X, ir uzvarējs lietotājs PvC režīmā vai PvP režīmā tas kurš lietoja X simbolu
                         "X" -> if (gameMode == "PvC") "$playerName wins!" else "Player X wins!"
+                        // O ir otrā spēlētāja gājiens, PvC gadījumā tas ir dators un PvP režīmā tas ir simbola O spēlētājs
                         "O" -> if (gameMode == "PvC") "CPU wins!" else "Player O wins!"
                         else -> ""
                     }
                 )
             },
+            // turpat arī poga, lai spēli sāktu no jauna vai atkal dotu iespēju atgriezties uz režīma izvēles logu
             confirmButton = {
                 Button(onClick = {
                     resetGame()
